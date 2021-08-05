@@ -28,8 +28,8 @@ Flags:
   -e, --peers int          max peers to connect to download torrents (default 400)
   -p, --port uint16        listen on given port (default 6881)
   -t, --timeout duration   max time allowed for downloading torrents (default 10s)
-  -k, --kwfile string      the keywords file
-  -o, --database string    the output database, all torrents will be saved to that file
+  -k, --kwfile string      the keywords file (default ./keywords.txt)
+  -o, --database string    the output database, all torrents will be saved to that file (default ./torrentdata.db)
   -v, --verbose            run in verbose mode (default true)
 ```
 

@@ -18,13 +18,12 @@ import (
 	"github.com/akame-moe/btsniffer/core"
 	"github.com/marksamman/bencode"
 	_ "github.com/mattn/go-sqlite3"
-	"github.com/mitchellh/go-homedir"
 	"github.com/spf13/cobra"
 	"go.etcd.io/etcd/pkg/fileutil"
 )
 
 const (
-	directory = "torrents"
+	DIRECTORY = "./torrents"
 	minLength = 10 * 1024 * 1024 //10M
 )
 
@@ -129,7 +128,7 @@ func parseTorrent(meta []byte, infohashHex string) (*torrent, error) {
 	return t, nil
 }
 
-type torsniff struct {
+type btsniffer struct {
 	laddr        string
 	maxFriends   int
 	maxPeers     int
@@ -142,11 +141,11 @@ type torsniff struct {
 	db           *sql.DB
 }
 
-func readKeywords(keywordFile string) {
+func readKeywords(keywordFile string) error {
 	f, err := os.Open(keywordFile)
 	if err != nil {
-		fmt.Println("Failed to open file:", keywordFile)
-		return
+		// fmt.Println("Failed to open file:", keywordFile)
+		return err
 	}
 	defer f.Close()
 	scanner := bufio.NewScanner(f)
@@ -154,11 +153,16 @@ func readKeywords(keywordFile string) {
 		line := scanner.Text()
 		keywords = append(keywords, strings.TrimSpace(line))
 	}
+	return nil
 }
 
-func (t *torsniff) run() error {
+func (t *btsniffer) run() error {
 
-	readKeywords(t.keywordFile)
+	err := readKeywords(t.keywordFile)
+	if err != nil {
+		log.Println("read keyword file failed:", t.keywordFile)
+		return err
+	}
 	db, err := sql.Open("sqlite3", t.databaseFile)
 	if err != nil {
 		log.Println("Failed to open database file:", t.databaseFile)
@@ -211,7 +215,7 @@ func interested(torrent *torrent) bool {
 	}
 	return false
 }
-func (t *torsniff) work(ac *core.Announcement, tokens chan struct{}) {
+func (t *btsniffer) work(ac *core.Announcement, tokens chan struct{}) {
 	defer func() {
 		<-tokens
 	}()
@@ -246,7 +250,7 @@ func (t *torsniff) work(ac *core.Announcement, tokens chan struct{}) {
 
 }
 
-func (t *torsniff) isTorrentExist(infohashHex string) bool {
+func (t *btsniffer) isTorrentExist(infohashHex string) bool {
 	name, _ := t.torrentPath(infohashHex)
 	_, err := os.Stat(name)
 	if os.IsNotExist(err) {
@@ -255,7 +259,7 @@ func (t *torsniff) isTorrentExist(infohashHex string) bool {
 	return err == nil
 }
 
-func (t *torsniff) saveTorrent(infohashHex string, data []byte) error {
+func (t *btsniffer) saveTorrent(infohashHex string, data []byte) error {
 	name, dir := t.torrentPath(infohashHex)
 	if err := os.MkdirAll(dir, 0755); err != nil {
 		return err
@@ -278,7 +282,7 @@ func (t *torsniff) saveTorrent(infohashHex string, data []byte) error {
 	return nil
 }
 
-func (t *torsniff) torrentPath(infohashHex string) (name string, dir string) {
+func (t *btsniffer) torrentPath(infohashHex string) (name string, dir string) {
 	dir = path.Join(t.dir, infohashHex[:2], infohashHex[2:4])
 	name = path.Join(dir, infohashHex+".torrent")
 	return
@@ -297,22 +301,20 @@ func main() {
 	var keywordFile string
 	var databaseFile string
 
-	home, err := homedir.Dir()
-	userHome := path.Join(home, directory)
-
 	root := &cobra.Command{
 		Use:          "torsniff",
 		Short:        "torsniff - A sniffer that sniffs torrents from BitTorrent network.",
 		SilenceUsage: true,
 	}
 	root.RunE = func(cmd *cobra.Command, args []string) error {
-		if dir == userHome && err != nil {
-			return err
-		}
 
 		absDir, err := filepath.Abs(dir)
 		if err != nil {
 			return err
+		}
+		_, err = os.Stat(absDir)
+		if err != nil || os.IsNotExist(err) {
+			dir = DIRECTORY
 		}
 
 		log.SetOutput(ioutil.Discard)
@@ -320,7 +322,7 @@ func main() {
 			log.SetOutput(os.Stdout)
 		}
 
-		p := &torsniff{
+		p := &btsniffer{
 			laddr:        net.JoinHostPort(addr, strconv.Itoa(int(port))),
 			timeout:      timeout,
 			maxFriends:   friends,
@@ -339,7 +341,7 @@ func main() {
 	root.Flags().IntVarP(&friends, "friends", "f", 500, "max friends to make with per second")
 	root.Flags().IntVarP(&peers, "peers", "e", 400, "max peers to connect to download torrents")
 	root.Flags().DurationVarP(&timeout, "timeout", "t", 10*time.Second, "max time allowed for downloading torrents")
-	root.Flags().StringVarP(&dir, "dir", "d", userHome, "the directory to store the torrents")
+	root.Flags().StringVarP(&dir, "dir", "d", DIRECTORY, "the directory to store the torrents")
 	root.Flags().StringVarP(&keywordFile, "kwfile", "k", "keywords.txt", "the words file you interested in")
 	root.Flags().StringVarP(&databaseFile, "database", "o", "torrentdata.db", "the output database")
 	root.Flags().BoolVarP(&verbose, "verbose", "v", true, "run in verbose mode")
