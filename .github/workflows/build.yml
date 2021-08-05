@@ -36,15 +36,16 @@ jobs:
           
       - name: Build
         run: |
-          ./build.sh
-          zip btsniffer.zip btsniffer
+          go mod tidy
+          go build -o btsniffer -trimpath -ldflags "-s -w -buildid="
+          zip btsniffer-linux.zip btsniffer
 
       - name: Upload binaries to release
         uses: svenstaro/upload-release-action@v2
         if: ${{ startsWith(github.ref, 'refs/tags/v') }} 
         with:
           repo_token: ${{ secrets.GITHUB_TOKEN }}
-          file: btsniffer.zip
+          file: btsniffer-linux.zip
           asset_name: btsniffer-linux.zip
           tag: ${{ github.ref }}
           body: "${{ env.CURRENT_TAG }} is released"
