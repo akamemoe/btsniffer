@@ -1,14 +1,9 @@
-torsniff - a sniffer that sniffs torrents from BitTorrent network
+btsniffer - a sniffer that sniffs torrents from BitTorrent network
 ======================================
 
-
-**English** | [简体中文](./README-zh.md)
-
 ## Introduction
-torsniff is a torrent sniffer, it sniffs torrents that people are using to download movies, music, docs, games and so on from BitTorrent network.
 
-A torrent has valuable information, so you can use torsniff to build your own torrent database(e.g: The Pirate Bay), or to do data mining and analyzing.
-
+Refactored from [torsniff](https://github.com/fanpei91/torsniff), thanks for the original project author's efforts.
 
 ## Compiling
 
@@ -34,7 +29,7 @@ Flags:
   -p, --port uint16        listen on given port (default 6881)
   -t, --timeout duration   max time allowed for downloading torrents (default 10s)
   -k, --kwfile string      the keywords file
-  -o, --database string    the output database, all torrent will be saved here
+  -o, --database string    the output database, all torrents will be saved to that file
   -v, --verbose            run in verbose mode (default true)
 ```
 
@@ -43,13 +38,8 @@ Use default flags:
 
 `./btsniffer`
 
-## Requirements
 
-* A host having a public IP(recommended), or UDP port forwarding/port mapping in private network/NAT
-* Allow UDP traffic get through firewall
-* Your ISP/Hosting Provider allows BitTorrent traffic(torsniff works on [vultr.com](https://www.vultr.com/?ref=7114970))
-
-## Protocols
+## Protocols References
 - [DHT Protocol](http://www.bittorrent.org/beps/bep_0005.html)
 - [The BitTorrent Protocol Specification](http://www.bittorrent.org/beps/bep_0003.html)
 - [BitTorrent  Extension Protocol](http://www.bittorrent.org/beps/bep_0010.html)
