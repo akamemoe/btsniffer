@@ -58,8 +58,17 @@ func ByteCountSI(b int64) string {
 	return fmt.Sprintf("%.1f%c",
 		float64(b)/float64(div), "kMGTPE"[exp])
 }
-
 func (t *torrent) String() string {
+	return fmt.Sprintf(
+		"[%s]%d(%s)%s#%d\n",
+		t.infohashHex,
+		t.length,
+		ByteCountSI(t.length),
+		t.name,
+		len(t.files),
+	)
+}
+func (t *torrent) Pretty() string {
 	return fmt.Sprintf(
 		"link: %s\nname: %s\nsize: %d(%s)\nfile: %d\n",
 		fmt.Sprintf("magnet:?xt=urn:btih:%s", t.infohashHex),
@@ -150,8 +159,10 @@ func readKeywords(keywordFile string) error {
 	defer f.Close()
 	scanner := bufio.NewScanner(f)
 	for scanner.Scan() {
-		line := scanner.Text()
-		keywords = append(keywords, strings.TrimSpace(line))
+		line := strings.TrimSpace(scanner.Text())
+		if line != "" {
+			keywords = append(keywords, line)
+		}
 	}
 	return nil
 }
@@ -160,8 +171,7 @@ func (t *btsniffer) run() error {
 
 	err := readKeywords(t.keywordFile)
 	if err != nil {
-		log.Println("read keyword file failed:", t.keywordFile)
-		return err
+		log.Println("[WRANNING]Can't read keyword file:", t.keywordFile)
 	}
 	db, err := sql.Open("sqlite3", t.databaseFile)
 	if err != nil {
@@ -239,15 +249,19 @@ func (t *btsniffer) work(ac *core.Announcement, tokens chan struct{}) {
 		return
 	}
 	log.Println(torrent)
-	t.db.Exec("INSERT INTO torrent(hash,name,length) VALUES(?,?,?)", torrent.infohashHex, torrent.name, torrent.length)
+	
 	if interested(torrent) {
+		t.record(torrent)
+		t.saveTorrent(ac.InfoHashHex, meta)
 		log.Println("[SAVED]:", torrent.name)
-		if err := t.saveTorrent(ac.InfoHashHex, meta); err != nil {
-			return
-		}
-
 	}
 
+}
+
+func (t *btsniffer) record(torrent *torrent){
+	if t.db != nil{
+		t.db.Exec("INSERT INTO torrent(hash,name,length) VALUES(?,?,?)", torrent.infohashHex, torrent.name, torrent.length)
+	}
 }
 
 func (t *btsniffer) isTorrentExist(infohashHex string) bool {
@@ -313,7 +327,7 @@ func main() {
 			return err
 		}
 		_, err = os.Stat(absDir)
-		if err != nil || os.IsNotExist(err) {
+		if err != nil {
 			dir = DIRECTORY
 		}
 
