@@ -44,4 +44,5 @@ jobs:
         if: ${{ startsWith(github.ref, 'refs/tags/v') }}
         env: 
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-        run: gh release create "$CURRENT_TAG" --title "title" --notes "new version is released. (CAUTIOUS: use at your own risk)" *.zip
+        run: |
+          gh release create "$CURRENT_TAG" -t "ATTENTION" -n "$CURRENT_TAG is released. (CAUTIOUS: use at your own risk)" *.zip
