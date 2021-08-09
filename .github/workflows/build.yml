@@ -40,12 +40,8 @@ jobs:
           go build -o btsniffer -trimpath -ldflags "-s -w -buildid="
           zip btsniffer-linux.zip btsniffer
 
-      - name: Upload binaries to release
-        uses: svenstaro/upload-release-action@v2
-        if: ${{ startsWith(github.ref, 'refs/tags/v') }} 
-        with:
-          repo_token: ${{ secrets.GITHUB_TOKEN }}
-          file: btsniffer-linux.zip
-          asset_name: btsniffer-linux.zip
-          tag: ${{ github.ref }}
-          body: "${{ env.CURRENT_TAG }} is released"
+      - name: Release binaries
+        if: ${{ startsWith(github.ref, 'refs/tags/v') }}
+        env: 
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: gh release create $CURRENT_TAG -n "$CURRENT_TAG is released. *(CAUTIOUS: use at your own risk)*" btsniffer-linux.zip
