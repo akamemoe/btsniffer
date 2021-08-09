@@ -44,4 +44,4 @@ jobs:
         if: ${{ startsWith(github.ref, 'refs/tags/v') }}
         env: 
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-        run: gh release create $CURRENT_TAG -n "$CURRENT_TAG is released. *(CAUTIOUS: use at your own risk)*" btsniffer-linux.zip
+        run: gh release create "$CURRENT_TAG" -n "$CURRENT_TAG is released. *(CAUTIOUS: use at your own risk)*" btsniffer-linux.zip
